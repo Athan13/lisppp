@@ -9,7 +9,6 @@ module Interp where
     import Control.Monad.Trans.State  ( StateT(runStateT), modify, get, put )
     import Control.Monad.IO.Class (liftIO)
     import Control.Monad.Trans.Class (lift)
-    import Control.Monad (forever)
 
     import System.IO
     import Text.Read (readMaybe)
@@ -17,14 +16,14 @@ module Interp where
     type BFTape = V.Vector Word8
     data BFInstruction = BFPlus | BFMinus | BFRight | BFLeft | BFLoopL | BFLoopR | BFPoint | BFComma
         deriving Eq
-    type BFProgram = V.Vector BFInstruction
+    type BFSource = V.Vector BFInstruction
 
     instance Show BFInstruction where
         show i = case i of {
-            BFPlus -> "("; BFMinus -> ")"; 
-            BFLeft -> "<"; BFRight -> ">";
-            BFLoopL -> "["; BFLoopR -> "]";
-            BFPoint -> "{"; BFComma -> "}";
+            BFPlus -> "(";   BFMinus -> ")"; 
+            BFLeft -> "<";   BFRight -> ">";
+            BFLoopL -> "[";  BFLoopR -> "]";
+            BFPoint -> "{";  BFComma -> "}";
         }
 
     toInstr :: [Char] -> [BFInstruction]
@@ -40,16 +39,16 @@ module Interp where
             }
 
     
-    -- Program state is either a tuple (tape, head position, loop left, instruction number), 
+    -- Program state is either a tuple (tape, head position, instructions, instruction number), 
     -- or the position of the first error
     data InterpError = InterpError Int String BFInstruction
     instance Show InterpError where 
         show (InterpError i s instr) = concat [s, " on character ", show instr, " at position ", show i]
 
-    type ProgramState = (BFTape, Int, BFProgram, Int)
-    type Program = ExceptT InterpError (StateT ProgramState IO)
+    type BFProgramState = (BFTape, Int, BFSource, Int)
+    type BFProgram = ExceptT InterpError (StateT BFProgramState IO)
         
-    execInstr :: BFInstruction -> Bool -> Program ()
+    execInstr :: BFInstruction -> Bool -> BFProgram ()
     execInstr BFPlus _ = lift $ modify incrementAtHead
         where incrementAtHead (tape, pos, instr, i_pos) = ((V.modify (\v -> MV.modify v (+1) pos) tape), pos, instr, i_pos + 1)
     execInstr BFMinus _ = lift $ modify decrementAtHead
@@ -79,7 +78,7 @@ module Interp where
                     
     execInstr BFLoopR _ = do
         (tape, pos, instr, i_pos) <- lift get
-        if not (tape V.! pos == 0) 
+        if tape V.! pos /= 0 
             then case scanLeft instr (i_pos - 1) 1 of
                 Just i_pos' -> lift $ put (tape, pos, instr, i_pos')
                 Nothing -> throwE (InterpError i_pos "Invalid loop: no left match found" BFLoopR)
@@ -116,7 +115,7 @@ module Interp where
             Just num -> lift $ put (V.modify (\v -> MV.write v pos (fromIntegral num)) tape, pos, instr, i_pos + 1)
             Nothing -> throwE $ InterpError i_pos ("Invalid read: required number from 0 to 255, got " ++ num ++ " insetad") BFComma
 
-    execProgram :: (Bool, Bool) -> Program ()
+    execProgram :: (Bool, Bool) -> BFProgram ()
     execProgram args@(debug, print_chars) = do
         p@(tape, pos, instrs, i_pos) <- lift $ get
         case instrs V.!? i_pos of
@@ -132,5 +131,5 @@ module Interp where
         return result
             where 
                 instructions = toInstr s
-                startState = ((V.replicate tape_size 0), 0, V.fromList instructions, 0) :: ProgramState
+                startState = ((V.replicate tape_size 0), 0, V.fromList instructions, 0) :: BFProgramState
     

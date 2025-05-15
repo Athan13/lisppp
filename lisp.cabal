@@ -37,17 +37,12 @@ executable compile
     hs-source-dirs:   app/compile
     default-language: Haskell2010
 
-executable exec
+executable bracketfuck
     main-is: Main.hs
-
-    -- Modules included in this executable, other than Main.
-    other-modules: Interp
-
-    -- LANGUAGE extensions used by modules in this package.
-    -- other-extensions:
-    build-depends:  transformers ^>=0.6.1.2,
-                    mtl ^>=2.3.1, 
-                    base ^>=4.21.0.0,
-                    vector
-    hs-source-dirs:   app/execute
+    other-modules:    Interp
+    build-depends:    transformers ^>=0.6.1.2,
+                      mtl ^>=2.3.1, 
+                      base ^>=4.21.0.0,
+                      vector
+    hs-source-dirs:   app/bracketfuck
     default-language: Haskell2010

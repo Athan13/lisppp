@@ -15,4 +15,6 @@ module Main where
                 case result of
                     Left e  -> print e
                     Right _ -> putStrLn "\nSuccessfully terminated."
-            _ -> putStrLn "Usage:\n\tcabal run exec -- <size-of-tape> <file-name>"
+            _ -> putStrLn "Usage:\n\tcabal run exec -- <size-of-tape> <file-name> [-c] [--debug]\
+\\n\n\tThe --debug option displays the state of the program at every instruction, and the \
+\-c option displays the output of the program as a character rather than a 8-bit unsigned int."
