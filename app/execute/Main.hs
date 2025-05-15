@@ -7,9 +7,11 @@ module Main where
     main = do
         args <- getArgs
         case args of
-            tape_size : file : _ -> do
+            file : tape_size : args_rest -> do
+                let debug = "--debug" `elem` args_rest
+                let print_chars = "-c" `elem` args_rest
                 brainfuck <- readFile file
-                result <- interp (read tape_size) brainfuck
+                result <- interp (read tape_size) brainfuck (debug, print_chars)
                 case result of
                     Left e  -> print e
                     Right _ -> putStrLn "\nSuccessfully terminated."
