@@ -1,4 +1,4 @@
-module Interp where
+module Interp (interp) where
     import qualified Data.Vector as V
     import qualified Data.Vector.Mutable as MV
 

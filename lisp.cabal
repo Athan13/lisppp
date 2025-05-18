@@ -8,17 +8,11 @@ version:            0.1.0.0
 -- A longer description of the package.
 -- description:
 
--- A URL where users can report bugs.
--- bug-reports:
-
 -- The license under which the package is released.
 -- license:
 
 -- The package author(s).
--- author:
-
--- An email address to which users can send suggestions, bug reports, and patches.
--- maintainer:
+author: Athan Massouras
 
 -- A copyright notice.
 -- copyright:
@@ -26,19 +20,17 @@ version:            0.1.0.0
 extra-source-files: CHANGELOG.md
 
 executable compile
-    main-is:          Main.hs
-
-    -- Modules included in this executable, other than Main.
-    -- other-modules:
-
-    -- LANGUAGE extensions used by modules in this package.
-    -- other-extensions:
-    build-depends:    base ^>=4.21.0.0
-    hs-source-dirs:   app/compile
-    default-language: Haskell2010
+    main-is:            Main.hs
+    other-modules:      Parser.Lexer
+    build-depends:      base ^>=4.21.0.0,
+                        text ^>=2.1.2,
+                        array ^>= 0.5.8.0,
+    build-tool-depends: alex:alex, happy:happy
+    hs-source-dirs:     app/compile
+    default-language:   Haskell2010
 
 executable bracketfuck
-    main-is: Main.hs
+    main-is:          Main.hs
     other-modules:    Interp
     build-depends:    transformers ^>=0.6.1.2,
                       mtl ^>=2.3.1, 
