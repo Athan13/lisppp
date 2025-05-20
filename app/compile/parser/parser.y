@@ -27,14 +27,13 @@ import qualified Parser.Lexer as L
     EOF         { L.EOF }
 
 %%
-Program : Exp { Program NilDefn $1 }
--- Program : Defns Exp EOF { Program $1 $2 }
+Program : Defns Exp { Program $1 $2 }
 
--- Defns : {- empty -}                                 { NilDefn }
---       | Defns lparen define lparen Args Exp rparen  { Defns (Defn $5 $6) $1 }
+Defns : {- empty -}                                     { [] }
+      | Defns lparen define var lparen Args Exp rparen  { (Defn $4 $6 $7) : $1 }
 
--- Args : rparen   { NilArg }
---     | var Args  { Args $1 $2 }
+Args : rparen   { [] }
+    | var Args  { $1 : $2 }
 
 Exp : int          { Int $1 }
     | var          { Var $1 }
@@ -44,18 +43,16 @@ Exp : int          { Int $1 }
     | lparen let lparen var Exp rparen Exp rparen { Let $4 $5 $7 }
     | lparen read rparen       { Read }
     | lparen write Exp rparen  { Write $3 }
+    | lparen var CallArgs      { Call $2 $3 }
+
+CallArgs : rparen       { [] }
+         | Exp CallArgs { $1 : $2 }
 
 {
-data Program = Program Defns Exp
+data Program = Program [Defn] Exp
     deriving (Show)
 
-data Defns = Defns Defn Defns | NilDefn
-    deriving (Show)
-
-data Defn = Defn Args Exp
-    deriving (Show)
-
-data Args = Args String Args | NilArg
+data Defn = Defn String [String] Exp
     deriving (Show)
 
 data Exp = Int Int
@@ -66,6 +63,7 @@ data Exp = Int Int
          | Let String Exp Exp
          | Read
          | Write Exp
+         | Call String [Exp]
     deriving (Show)
 
 parseError :: L.Token -> L.Alex a
