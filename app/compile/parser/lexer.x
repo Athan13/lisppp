@@ -1,8 +1,8 @@
 {
-module Parser.Lexer (alexScanTokens, Token) where
+module Parser.Lexer where
 }
 
-%wrapper "posn"
+%wrapper "monad"
 
 $digit = 0-9            -- digits
 $alpha = [a-zA-Z]       -- alphabetic characters
@@ -11,23 +11,22 @@ tokens :-
 
   $white+				;
   "--".*				;
-  let					             { tok (\p s -> Let p) }
-  if					             { tok (\p s -> If p) }
-  do					             { tok (\p s -> Do p) }
-  while					             { tok (\p s -> While p) }
-  define					         { tok (\p s -> Define p) }
-  read\-byte				         { tok (\p s -> Read p) }
-  print\-byte					     { tok (\p s -> Write p) }
-  $digit+				             { tok (\p s -> Int p (read s)) }
-  [\+\-\*\/\%]                       { tok (\p s -> Op p (charToOp $ head s)) }
-  [\=\<\>] | (\>\=) | (\<=) | (\!\=) { tok (\p s -> Comp p (strToComp s)) }
-  $alpha [$alpha $digit \_ \']*		 { tok (\p s -> Var p s) }
-  \(                                 { tok (\p s -> LPAREN p) }
-  \)                                 { tok (\p s -> RPAREN p) }
+  let					             { tok (\s -> Let) }
+  if					             { tok (\s -> If) }
+  do					             { tok (\s -> Do) }
+  while					             { tok (\s -> While) }
+  define					         { tok (\s -> Define) }
+  read\-byte				         { tok (\s -> Read) }
+  print\-byte					     { tok (\s -> Write) }
+  $digit+				             { tok (\s -> Int (read s)) }
+  [\+\-\*\/\%]                       { tok (\s -> Op (charToOp $ head s)) }
+  [\=\<\>] | (\>\=) | (\<=) | (\!\=) { tok (\s -> Comp (strToComp s)) }
+  $alpha [$alpha $digit \_ \']*		 { tok (\s -> Var s) }
+  \(                                 { tok (\s -> LPAREN) }
+  \)                                 { tok (\s -> RPAREN) }
 
 {
-tok f p s = f p s
-
+-- Tokens
 data Op = Add | Sub | Mul | Div | Mod
     deriving (Show, Eq)
 charToOp c = case c of {'+' -> Add; '-' -> Sub; '*' -> Mul; '/' -> Div; '%' -> Mod; _ -> undefined}
@@ -38,35 +37,34 @@ strToComp s = case s of {"=" -> Eq; "!=" -> Neq; "<" -> Lt; ">" -> Gt; "<=" -> L
 
 data Token =
     -- Keywords
-    Let AlexPosn
-    | If AlexPosn
-    | Do AlexPosn
-    | While AlexPosn
-    | Define AlexPosn
-    | Read AlexPosn
-    | Write AlexPosn
+    Let
+    | If
+    | Do
+    | While
+    | Define
+    | Read
+    | Write
     -- Symbols
-    | Op AlexPosn Op
-    | Comp AlexPosn Comp
-    | Var AlexPosn String
-    | Int AlexPosn Int
-    | LPAREN AlexPosn
-    | RPAREN AlexPosn
+    | Op Op
+    | Comp Comp
+    | Var String
+    | Int Int
+    | LPAREN
+    | RPAREN
+    | EOF
     deriving (Show, Eq)
 
-token_posn :: Token -> AlexPosn
-token_posn (Let p) = p
-token_posn (If p) = p
-token_posn (Do p) = p
-token_posn (While p) = p
-token_posn (Define p) = p
-token_posn (Read p) = p
-token_posn (Write p) = p
+-- Alex
+tok :: (String -> Token) -> AlexAction Token
+tok f (_,_,_,input) len = return $ f (take len input)
 
-token_posn (Op p _) = p
-token_posn (Comp p _) = p
-token_posn (Var p _) = p
-token_posn (Int p _) = p
-token_posn (LPAREN p) = p
-token_posn (RPAREN p) = p
+alexEOF :: Alex Token
+alexEOF = return EOF
+
+lexer :: String -> Either String [Token]
+lexer input = runAlex input go
+    where
+        go = do
+            output <- alexMonadScan
+            if output == EOF then return [output] else (output :) <$> go
 }
