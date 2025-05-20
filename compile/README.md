@@ -1,7 +1,7 @@
 # B-Lisp
 
 This is a pretty standard (if simplified) Lisp-like language that compiles into Bracketfuck. It supports the following operations:
-- Arithmetic operations over the integers (technically, over $\mathbb F_{256}$).
+- Arithmetic operations over the integers (technically, over $\mathbb{F}_{256}$).
 - Variable assignment using `let` bindings (i.e. `(let (x 3) (+ x x))` gives 6).
 - Basic I/O: reading from `stdin` and writing to `stdout` using the `read-byte` and `print-byte` functions.
 - Basic control flow:
