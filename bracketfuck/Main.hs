@@ -15,7 +15,7 @@ module Main where
                 case result of
                     Left e  -> putStrLn $ "Interpreter error:\n\t" ++ show e
                     Right _ -> putStrLn "\nSuccessfully terminated."
-            _ -> putStrLn "Usage:\n\tcabal run exec -- <size-of-tape> <file-name> [-c] [-v]\
+            _ -> putStrLn "Usage:\n\tcabal run bracketfuck -- <file-name> <tape-size> [-c] [-v]\
 \\n\n\t -c \t displays the output of the program as a character rather than a 8-bit unsigned int.\
 \\n \t -v \t displays the state of the program after every instruction.\
 \\n \t --help  displays this message."

@@ -8,7 +8,7 @@ This is a pretty standard (if simplified) Lisp-like language that compiles into 
     - Do blocks of the form `(do (action1) (action2) ...)`.
     - If-then-else conditionals of the form `(if (cond) (then-case) (else-case))`.
     - While loops of the form `(while (cond) (do))`.
-    - **Non-recursive** function calls of the form `(define (args) (body))`.
+    - **Non-recursive** function calls of the form `(define (args) (body))`. All functions are of the form $(\mathbb{F}_{256})^n \to \mathbb{F}_{256}$, where $n$ is the number of arguments.
 
 Upcoming features (no promises):
 - Lisp-style lists with `cons`, `car`, and `cdr`.

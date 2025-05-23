@@ -18,7 +18,7 @@ tokens :-
   define					         { tok (\s -> Define) }
   read\-byte				         { tok (\s -> Read) }
   print\-byte					     { tok (\s -> Write) }
-  $digit+				             { tok (\s -> Int (read s)) }
+  $digit+				             { tok (\s -> Num (read s)) }
   [\+\-\*\/\%]                       { tok (\s -> Op (charToOp $ head s)) }
   [\=\<\>] | (\>\=) | (\<=) | (\!\=) { tok (\s -> Comp (strToComp s)) }
   $alpha [$alpha $digit \_ \']*		 { tok (\s -> Var s) }
@@ -48,7 +48,7 @@ data Token =
     | Op Op
     | Comp Comp
     | Var String
-    | Int Int
+    | Num Int
     | LPAREN
     | RPAREN
     | EOF

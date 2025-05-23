@@ -21,7 +21,7 @@ import qualified Parser.Lexer as L
     op          { L.Op $$ }
     comp        { L.Comp $$ }
     var         { L.Var $$ }
-    int         { L.Int $$ }
+    num         { L.Num $$ }
     lparen      { L.LPAREN }
     rparen      { L.RPAREN }
     EOF         { L.EOF }
@@ -35,7 +35,7 @@ Defns : {- empty -}                                     { [] }
 Args : rparen   { [] }
     | var Args  { $1 : $2 }
 
-Exp : int          { Int $1 }
+Exp : num          { Num $1 }
     | var          { Var $1 }
     | lparen op Exp Exp rparen     { Op $2 $3 $4 }
     | lparen comp Exp Exp rparen   { Comp $2 $3 $4 }
@@ -55,7 +55,7 @@ data Program = Program [Defn] Exp
 data Defn = Defn String [String] Exp
     deriving (Show)
 
-data Exp = Int Int
+data Exp = Num Int
          | Var String
          | Op L.Op Exp Exp
          | Comp L.Comp Exp Exp

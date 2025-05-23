@@ -39,7 +39,7 @@ module Interp (interp) where
             }
 
     
-    -- Program state is either a tuple (tape, head position, instructions, instruction number), 
+    -- Program state is either a tuple (tape, head position, instructions, instruction pointer), 
     -- or the position of the first error
     data InterpError = InterpError Int String BFInstruction
     instance Show InterpError where 
@@ -98,7 +98,7 @@ module Interp (interp) where
         (tape, pos, instr, i_pos) <- lift get
         if print_chars then do
             let c = chr $ fromIntegral $ tape V.! pos 
-            liftIO $ putStr (show c ++ " ")
+            liftIO $ putChar c
             liftIO $ hFlush stdout
             lift $ put (tape, pos, instr, i_pos + 1)
         else do 
