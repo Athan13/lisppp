@@ -12,7 +12,7 @@ module Compiler.Ast where
         Num n -> return $ Num n
         Var s -> case M.lookup s symtab of 
             Just e  -> return e
-            Nothing -> throwError $ "Unbound variable " ++ s ++ " in " ++ show e
+            Nothing -> throwError $ "unbound variable " ++ s ++ " in " ++ show e
         Op op e1 e2 -> do
             e1 <- replace_vars symtab e1
             e2 <- replace_vars symtab e2
@@ -60,7 +60,7 @@ module Compiler.Ast where
             if name /= s then 
                 return $ Call s es
             else if length es /= length args then
-                throwError $ "Argument mismatch: called function " ++ show d ++ " with arguments " ++ show es
+                throwError $ "argument mismatch, called function " ++ show d ++ " with arguments " ++ show es
             else replace_vars (M.fromList $ zip args es) body
 
     inline_defns :: Program -> AstError Exp

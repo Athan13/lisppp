@@ -2,6 +2,7 @@
 module Parser.Parser where
 
 import qualified Parser.Lexer as L
+import Parser.Lexer (Op, Comp)
 }
 
 %name blisp
@@ -57,8 +58,8 @@ data Defn = Defn String [String] Exp
 
 data Exp = Num Int
          | Var String
-         | Op L.Op Exp Exp
-         | Comp L.Comp Exp Exp
+         | Op Op Exp Exp
+         | Comp Comp Exp Exp
          | While Exp Exp
          | Let String Exp Exp
          | Read
