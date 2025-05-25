@@ -11,13 +11,13 @@ tokens :-
 
   $white+				;
   "--".*				;
-  let					             { tok (\s -> Let) }
-  if					             { tok (\s -> If) }
-  do					             { tok (\s -> Do) }
+  let					               { tok (\s -> Let) }
+  if					               { tok (\s -> If) }
+  do					               { tok (\s -> Do) }
   while					             { tok (\s -> While) }
-  define					         { tok (\s -> Define) }
+  define			  		         { tok (\s -> Define) }
   read\-byte				         { tok (\s -> Read) }
-  print\-byte					     { tok (\s -> Write) }
+  print       					     { tok (\s -> Write) }
   $digit+				             { tok (\s -> Num (read s)) }
   [\+\-\*\/\%]                       { tok (\s -> Op (charToOp $ head s)) }
   [\=\<\>] | (\>\=) | (\<=) | (\!\=) { tok (\s -> Comp (strToComp s)) }
