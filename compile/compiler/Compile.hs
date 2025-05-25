@@ -4,7 +4,7 @@ module Compiler.Compile where
     import Compiler.Ast
     
     import Control.Monad.Except
-    import Control.Monad.State
+    import Control.Monad.Reader
     import qualified Data.Map as M
     
     data BFInstruction = BFPlus  Int 
@@ -82,25 +82,36 @@ module Compiler.Compile where
 
     type CompilerError = Either String
     type CompilerState = (Symtab, Int)
-    type Compiler = ExceptT String (State CompilerState)
+    type Compiler = ExceptT String (Reader CompilerState)
 
-    compile_exp :: Symtab -> Int -> Exp -> CompilerError [BFInstruction]
-    compile_exp symtab pos e = case e of
+    shift_pos :: Int -> CompilerState -> CompilerState
+    shift_pos n (s, p) = (s, p + n)
+
+    compile_exp :: Exp -> Compiler [BFInstruction]
+    compile_exp e = case e of
         Num n   -> return $ clear_cell ++ [BFPlus n]
-        Var s   -> case M.lookup s symtab of
-            Just idx -> return $ copy_cell idx pos (pos + 1) pos
-            Nothing  -> throwError $ "unbound variable " ++ s ++ " in expression " ++ show e
+        Var s   -> do
+            (symtab, pos) <- lift $ ask
+            case M.lookup s symtab of
+                Just idx -> return $ copy_cell idx pos (pos + 1) pos
+                Nothing  -> throwError $ "unbound variable " ++ s ++ " in expression " ++ show e
         Op Add e1 e2 -> do
-            e1 <- compile_exp symtab pos e1
-            e2 <- compile_exp symtab (pos + 1) e2
+            (_, pos) <- lift $ ask
+            e1 <- compile_exp e1
+            e2 <- local (shift_pos 1) (compile_exp e2)
             return $ e1 ++ [BFRight 1] ++ e2 ++ [BFLeft 1] ++ add_cells pos (pos + 1) pos
         Op Sub e1 e2 -> do
-            e1 <- compile_exp symtab pos e1
-            e2 <- compile_exp symtab (pos + 1) e2
+            (_, pos) <- lift $ ask
+            e1 <- compile_exp e1
+            e2 <- local (shift_pos 1) (compile_exp e2)
             return $ e1 ++ [BFRight 1] ++ e2 ++ [BFLeft 1] ++ sub_cells pos (pos + 1) pos
-        Op Mul e1 e2 -> do  -- calculate x * y --> [pos - 1], [x], [x], [x], [tmp], [y]
-            e1 <- compile_exp symtab pos e1
-            e2 <- compile_exp symtab (pos + 4) e2
+        Op Mul e1 e2 -> do  
+            -- calculate x * y --> [pos - 1], [x], [x], [x], [tmp], [y]
+            -- Idea is to add (pos + 2) to (pos) (y) times, replenishing (pos + 2) with 
+            -- (pos + 1) when it equals zero
+            (_, pos) <- lift $ ask
+            e1 <- compile_exp e1
+            e2 <- local (shift_pos 4) (compile_exp e2)
             return $ 
                 e1 
                 ++ copy_cell pos (pos + 1) (pos + 3) pos
@@ -111,13 +122,14 @@ module Compiler.Compile where
                 ++ copy_cell (pos + 1) (pos + 2) (pos + 3) (pos + 4) -- copy x back to tmp
                 ++ [BFLoopR 1, BFLeft 4]
         Read    -> return $ [BFComma 1]
-        Write e -> compile_exp symtab pos e >>= return . (++ [BFPoint 1])
+        Write e -> compile_exp e >>= return . (++ [BFPoint 1])
         _ -> throwError "Unsupported"
 
     compile :: Program -> CompilerError [BFInstruction]
     compile p = do
         p <- inline_defns p
-        compile_exp M.empty 0 p
-    
+        result <- runReader (runExceptT (compile_exp p)) (M.empty, 0)
+        return result
+
     showInstructions :: [BFInstruction] -> String
     showInstructions = concatMap show
