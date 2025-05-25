@@ -89,8 +89,8 @@ module Compiler.Compile where
 
     compile_exp :: Exp -> Compiler [BFInstruction]
     compile_exp e = case e of
-        Num n   -> return $ clear_cell ++ [BFPlus n]
-        Var s   -> do
+        Num n -> return $ clear_cell ++ [BFPlus n]
+        Var s -> do
             (symtab, pos) <- lift $ ask
             case M.lookup s symtab of
                 Just idx -> return $ copy_cell idx pos (pos + 1) pos
@@ -121,8 +121,14 @@ module Compiler.Compile where
                 ++ add_cells pos (pos + 2) (pos + 4) -- add x to x
                 ++ copy_cell (pos + 1) (pos + 2) (pos + 3) (pos + 4) -- copy x back to tmp
                 ++ [BFLoopR 1, BFLeft 4]
-        Read    -> return $ [BFComma 1]
-        Write e -> compile_exp e >>= return . (++ [BFPoint 1])
+        Let var e1 e2 -> do
+            (_, pos) <- lift $ ask
+            e1 <- compile_exp e1
+            e2 <- local (\(symtab, pos) -> (M.insert var pos symtab, pos + 1)) (compile_exp e2)
+            return $ e1 ++ [BFRight 1] ++ e2 ++ copy_cell (pos + 1) pos (pos + 2) (pos + 1)
+        Read     -> return $ [BFComma 1]
+        Write e  -> compile_exp e >>= return . (++ [BFPoint 1])
+        Call s _ -> throwError $ "function " ++ s ++ " is either recursive, or has not been defined."
         _ -> throwError "Unsupported"
 
     compile :: Program -> CompilerError [BFInstruction]
