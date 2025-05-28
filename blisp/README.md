@@ -13,4 +13,6 @@ Upcoming features (no promises):
 - Lisp-style lists with `cons`, `car`, and `cdr`.
 - General recursive functions.
 
-Examples are provided in the `examples` directory, while full details of the grammar and syntax are in `parser`.
+Examples are provided in the `examples` directory, while full details of the grammar and syntax are in `parser/lexer.x` and `parser/parser.y`.
+
+My eternal gratitude to the Esolang wiki (https://esolangs.org/wiki/Brainfuck_algorithms) for their description of existing Brainfuck algorithms for key operations.

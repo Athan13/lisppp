@@ -19,7 +19,7 @@ author: Athan Massouras
 -- category:
 extra-source-files: CHANGELOG.md
 
-executable compile
+executable blisp
     main-is:            Main.hs
     other-modules:      Parser.Lexer, Parser.Parser, Compiler.Compile, Compiler.Ast
     build-depends:      base ^>=4.21.0.0,
@@ -28,7 +28,7 @@ executable compile
                         mtl ^>=2.3.1, 
                         containers ^>=0.7,
     build-tool-depends: alex:alex, happy:happy
-    hs-source-dirs:     compile
+    hs-source-dirs:     blisp
     default-language:   Haskell2010
     ghc-options: -W
 

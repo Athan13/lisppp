@@ -1,0 +1,9 @@
+(define fact-helper (n accum)
+    (if (= n 1)
+        accum
+        (fact-helper (- n 1) (* n accum))
+    )
+)
+(define fact (n) (fact-helper n 1))
+
+(fact 5)
