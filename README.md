@@ -7,7 +7,25 @@ Ships with an interpreter for Bracketfuck so that you can test your programs.
 Written in Haskell using cabal. To try:
 - `git clone` this directory
 - `cabal build`
-- `cabal run compile -- <file-name.lisp>` to compile from Lisp to Bracketfuck
+- `cabal run blisp -- <file-name.blisp> -o <file-name.b>` to compile from Lisp to Bracketfuck
 - `cabal run bracketfuck -- <file-name.b> <tape-size>` to execute your file.
 
-See `compile/README.md` and `bracketfuck/README.md` for details on B-Lisp and Bracketfuck respectively.
+## Example:
+```
+(print (+ 3 3))
+```
+
+compiles to:
+
+```
+[)](((>[)](((<>[)<(>]<{
+```
+
+which outputs:
+
+```
+6
+Successfully terminated.
+```
+
+See `blisp/README.md` and `bracketfuck/README.md` for details (and more examples) on B-Lisp and Bracketfuck respectively.

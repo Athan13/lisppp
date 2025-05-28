@@ -9,10 +9,11 @@ This is a pretty standard (if simplified) Lisp-like language that compiles into 
     - If-then-else conditionals of the form `(if (cond) (then-case) (else-case))`.
     - General **non-recursive** functions.
     - **Tail-recursive** functions strictly of the form `(define f (args) (if (cond) (return-value) (f args')))`.
+
 Upcoming features (no promises):
 - Lisp-style lists with `cons`, `car`, and `cdr`.
 - General recursive functions.
 
 Examples are provided in the `examples` directory, while full details of the grammar and syntax are in `parser/lexer.x` and `parser/parser.y`.
 
-My eternal gratitude to the Esolang wiki (https://esolangs.org/wiki/Brainfuck_algorithms) for their description of existing Brainfuck algorithms for key operations.
+My eternal gratitude to the [Esolang wiki](https://esolangs.org/wiki/Brainfuck_algorithms) for their description of existing Brainfuck algorithms for key operations.

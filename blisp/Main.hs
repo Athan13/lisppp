@@ -18,9 +18,9 @@ module Main where
     main = do
         args <- getArgs
         case args of
-            ["-o", out_file] -> do
-                s <- getContents
+            in_file:"-o":out_file:_ -> do
+                s <- if in_file == "-i" then getContents else readFile in_file
                 case compile s of
                     Left err -> print $ "Error: " ++ err
                     Right success -> writeFile out_file $ Compile.showInstructions success
-            _ -> putStrLn "Usage:\n\tcabal run compile -- <in-file.lisp> -o <out-file.b>"
+            _ -> putStrLn "Usage:\n\tcabal run compile -- [in-file.lisp | -i] -o <out-file.b>"

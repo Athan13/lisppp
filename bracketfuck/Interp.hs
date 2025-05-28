@@ -106,7 +106,7 @@ module Interp (interp) where
             liftIO $ putStr (show c ++ " ")
             liftIO $ hFlush stdout
             lift $ put (tape, pos, instr, i_pos + 1)
-    execInstr BFComma print_chars = do
+    execInstr BFComma _ = do
         (tape, pos, instr, i_pos) <- lift get
         liftIO $ putStr "\nPass in value (0-255): "
         liftIO $ hFlush stdout
@@ -117,7 +117,7 @@ module Interp (interp) where
 
     execProgram :: (Bool, Bool) -> BFProgram ()
     execProgram args@(debug, print_chars) = do
-        p@(tape, pos, instrs, i_pos) <- lift $ get
+        (tape, pos, instrs, i_pos) <- lift $ get
         case instrs V.!? i_pos of
             Just instr -> do
                 if debug then liftIO $ print ((V.take 10 tape), pos, i_pos) else return ()
