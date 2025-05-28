@@ -1,3 +1,8 @@
+{-
+    My eternal gratitude to the Esolang wiki https://esolangs.org/wiki/Brainfuck_algorithms
+    for keeping me from having to figure these out myself.
+-}
+
 module Compiler.Compile where
     import Parser.Lexer (Op(..), Comp(..))
     import Parser.Parser
@@ -142,6 +147,16 @@ module Compiler.Compile where
             return $ e1 ++ [BFRight 1] ++ e2 ++ [BFLeft 1]
                 ++ [BFLoopL 1, BFRight 1, BFMinus 1, BFLeft 1, BFMinus 1, BFLoopR 1, BFRight 1]
                 ++ [BFLoopL 2, BFMinus 1, BFLoopR 1, BFLeft 1, BFPlus 1, BFRight 1, BFLoopR 1, BFLeft 1]
+        If cond e1 e2 -> do
+            -- [cond = pos][temp0][temp1][execute e1 or e2]
+            (_, pos) <- lift $ ask
+            cond <- compile_exp cond
+            e1 <- local (shift_pos 1) (compile_exp e1)  -- then-case
+            e2 <- local (shift_pos 2) (compile_exp e2)  -- else-case
+            return $ cond ++ [BFRight 1] ++ clear_cell ++ [BFPlus 1] ++ [BFRight 1] ++ clear_cell ++ [BFLeft 2]  -- initialise temp0 = 1, temp1 = 0
+                ++ [BFLoopL 1, BFRight 3] ++ e1 ++ [BFLeft 2, BFMinus 1, BFLoopR 1, BFRight 1]  -- then-case
+                ++ [BFLoopL 1, BFRight 2] ++ e2 ++ [BFLeft 2, BFMinus 1, BFRight 1, BFLoopR 1, BFLeft 2]  -- else-case
+                ++ copy_cell (pos + 3) pos (pos + 1) pos
         Let var e1 e2 -> do
             (_, pos) <- lift $ ask
             e1 <- compile_exp e1
