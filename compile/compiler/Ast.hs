@@ -31,7 +31,7 @@ module Compiler.Ast where
         else Nothing
     get_tail_call (Defn d_name arg_names (If cond then_case (Call c_name new_args))) =
         if d_name == c_name && is_simple then_case && all is_simple new_args then
-            Just $ \initial_args -> TailCall cond arg_names initial_args new_args then_case
+            Just $ \initial_args -> TailCall (Not cond) arg_names initial_args new_args then_case
         else Nothing
     get_tail_call _ = Nothing
 

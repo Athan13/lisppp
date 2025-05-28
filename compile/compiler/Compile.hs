@@ -227,7 +227,24 @@ module Compiler.Compile where
         Read     -> return $ [BFComma 1]
         Write e  -> compile_exp e >>= return . (++ [BFPoint 1])
         Call s _ -> throwError $ "function " ++ s ++ " is (not tail-) recursive or has not been defined."
-        t@(TailCall _ _ _ _ _) -> throwError $ "found tailcall " ++ show t
+        TailCall condition arg_names initial_args new_args return_value -> do
+            (_, pos) <- lift $ ask
+            let num_args = length arg_names
+            let arg_posns = [pos..(pos+num_args-1)]
+            initial_args <- mapM (\(offset, e) -> local (shift_pos offset) (compile_exp e)) (zip [0..] initial_args)
+            condition <- local (add_many_to_symtab arg_names arg_posns . shift_pos num_args) (compile_exp condition)
+            new_args <- mapM (local (add_many_to_symtab arg_names arg_posns . shift_pos num_args) . compile_exp) new_args
+            return_value <- local (add_many_to_symtab arg_names arg_posns . shift_pos num_args) (compile_exp return_value)
+            return $ concat ((++ [BFRight 1]) <$> initial_args) ++ condition
+                ++ [BFLoopL 1] 
+                    ++ concat (
+                        (\(i, new_arg) -> 
+                            new_arg ++ copy_cell (pos + num_args) (pos + i) (pos + num_args + 1) (pos + num_args)) 
+                        <$> zip [0..] new_args) 
+                    ++ condition 
+                ++ [BFLoopR 1] ++ return_value
+                ++ copy_cell (pos + num_args) pos (pos + 1) (pos + num_args) 
+                ++ [BFLeft num_args]
 
     compile :: Program -> CompilerError [BFInstruction]
     compile p = do
