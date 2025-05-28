@@ -132,6 +132,39 @@ module Compiler.Compile where
                 ++ add_cells pos (pos + 2) (pos + 4) -- add x to x
                 ++ copy_cell (pos + 1) (pos + 2) (pos + 3) (pos + 4) -- copy x back to tmp
                 ++ [BFLoopR 1, BFLeft 4]
+        Op Div e1 e2 -> do
+            {-
+                # >n d
+                [->-[>+>>]
+                    >[+[-<+>]
+                    >+>>]<<<<<
+                ]
+                # >0 d-n%d n%d n/d
+            -}
+            (_, pos) <- lift $ ask
+            e1 <- compile_exp e1
+            e2 <- local (shift_pos 1) (compile_exp e2)
+            return $ e1 ++ [BFRight 1] ++ e2 ++ [BFLeft 1]
+                ++ [BFLoopL 1, BFMinus 1, BFRight 1, BFMinus 1, BFLoopL 1, BFRight 1, BFPlus 1, BFRight 2, BFLoopR 1]
+                ++ [BFRight 1, BFLoopL 1, BFPlus 1, BFLoopL 1, BFMinus 1, BFLeft 1, BFPlus 1, BFRight 1, BFLoopR 1]
+                ++ [BFRight 1, BFPlus 1, BFRight 2, BFLoopR 1, BFLeft 5, BFLoopR 1]
+                ++ copy_cell (pos + 3) pos (pos + 1) pos 
+        Op Mod e1 e2 -> do
+            {-
+                # 0 >n d 0 0 0
+                [>->+<[>]
+                >[<+>-]
+                <<[<]>-]
+                # 0 >0 d-n%d n%d 0 0
+            -}
+            (_, pos) <- lift $ ask
+            e1 <- compile_exp e1
+            e2 <- local (shift_pos 1) (compile_exp e2)
+            return $ e1 ++ [BFRight 1] ++ e2 ++ [BFRight 1] ++ clear_n_cells_right 3 ++ [BFLeft 2]
+                ++ [BFLoopL 1, BFRight 1, BFMinus 1, BFRight 1, BFPlus 1, BFLeft 1, BFLoopL 1, BFRight 1, BFLoopR 1]
+                ++ [BFRight 1, BFLoopL 1, BFLeft 1, BFPlus 1, BFRight 1, BFMinus 1, BFLoopR 1]
+                ++ [BFLeft 2, BFLoopL 1, BFLeft 1, BFLoopR 1, BFRight 1, BFMinus 1, BFLoopR 1]
+                ++ copy_cell (pos + 2) pos (pos + 1) pos
         Eq e1 e2 -> do 
             -- x[-y-x]+y[x-y[-]]x for [x = pos][y = pos + 1][pos + 2]...
             e1 <- compile_exp e1
@@ -188,11 +221,13 @@ module Compiler.Compile where
             e1 <- compile_exp e1
             e2 <- local (add_to_symtab var pos) (compile_exp e2)
             return $ e1 ++ [BFRight 1] ++ e2 ++ copy_cell (pos + 1) pos (pos + 2) (pos + 1) ++ [BFLeft 1]
+        Do es -> do
+            es <- mapM compile_exp es
+            return $ concat es
         Read     -> return $ [BFComma 1]
         Write e  -> compile_exp e >>= return . (++ [BFPoint 1])
         Call s _ -> throwError $ "function " ++ s ++ " is (not tail-) recursive or has not been defined."
         t@(TailCall _ _ _ _ _) -> throwError $ "found tailcall " ++ show t
-        _ -> throwError "Unsupported"
 
     compile :: Program -> CompilerError [BFInstruction]
     compile p = do

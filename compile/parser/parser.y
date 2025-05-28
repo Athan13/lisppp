@@ -53,9 +53,13 @@ Exp : num          { Num $1 }
     | lparen not Exp rparen         { Not $3 }
     | lparen if Exp Exp Exp rparen  { If $3 $4 $5 }
     | lparen let lparen var Exp rparen Exp rparen { Let $4 $5 $7 }
+    | lparen do DoRest         { Do $3 }
     | lparen read rparen       { Read }
     | lparen write Exp rparen  { Write $3 }
     | lparen var CallArgs      { Call $2 $3 }
+
+DoRest : rparen         { [] }
+       | Exp DoRest     { $1 : $2 }
 
 CallArgs : rparen       { [] }
          | Exp CallArgs { $1 : $2 }
@@ -77,6 +81,7 @@ data Exp = Num Int
          | Not Exp
          | If Exp Exp Exp
          | Let String Exp Exp
+         | Do [Exp]
          | Read
          | Write Exp
          -- function name, args

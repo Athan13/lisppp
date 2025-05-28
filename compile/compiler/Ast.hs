@@ -18,6 +18,7 @@ module Compiler.Ast where
         Not e1        -> is_simple e1
         If cond e1 e2 -> is_simple cond && is_simple e1 && is_simple e2
         Let _ e1 e2   -> is_simple e1 && is_simple e2
+        Do es         -> all is_simple es
         Read          -> True
         Write e1      -> is_simple e1
         Call _ _      -> False
@@ -69,6 +70,9 @@ module Compiler.Ast where
             e1 <- replace_vars symtab e1
             e2 <- replace_vars symtab e2
             return $ Let s e1 e2
+        Do es -> do
+            es <- mapM (replace_vars symtab) es
+            return $ Do es
         Read      -> return $ Read
         Write e   -> replace_vars symtab e >>= return . Write
         Call s es -> mapM (replace_vars symtab) es >>= (return . Call s)
@@ -111,17 +115,20 @@ module Compiler.Ast where
             e1 <- inline_defn d is_tail_call e1
             e2 <- inline_defn d is_tail_call e2
             return $ If cond e1 e2
+        Do es -> do
+            es <- mapM (inline_defn d is_tail_call) es
+            return $ Do es
         Read    -> return $ Read
         Write e -> inline_defn d is_tail_call e >>= return . Write
         Call s es -> do
-                es <- mapM (inline_defn d is_tail_call) es
-                if name /= s then 
-                    return $ Call s es
-                else if length es /= length args then
-                    throwError $ "argument mismatch, called function " ++ show d ++ " with arguments " ++ show es
-                else case is_tail_call of 
-                    Just tail_call -> return $ tail_call es
-                    Nothing -> replace_vars (M.fromList $ zip args es) body
+            es <- mapM (inline_defn d is_tail_call) es
+            if name /= s then 
+                return $ Call s es
+            else if length es /= length args then
+                throwError $ "argument mismatch, called function " ++ show d ++ " with arguments " ++ show es
+            else case is_tail_call of 
+                Just tail_call -> return $ tail_call es
+                Nothing -> replace_vars (M.fromList $ zip args es) body
         TailCall _ _ _ _ _ -> throwError $ "invalid tailcall"
 
     inline_defns :: Program -> AstError Exp
