@@ -7,11 +7,10 @@ This is a pretty standard (if simplified) Lisp-like language that compiles into 
 - Basic control flow:
     - Do blocks of the form `(do (action1) (action2) ...)`.
     - If-then-else conditionals of the form `(if (cond) (then-case) (else-case))`.
-    - While loops of the form `(while (cond) (do))`.
-    - **Non-recursive** function calls of the form `(define (args) (body))`. All functions are of the form $(\mathbb{F}_{256})^n \to \mathbb{F}_{256}$, where $n$ is the number of arguments.
-
+    - General **non-recursive** functions.
+    - **Tail-recursive** functions strictly of the form `(define f (args) (if (cond) (return-value) (f args')))`.
 Upcoming features (no promises):
 - Lisp-style lists with `cons`, `car`, and `cdr`.
-- Recursive function calls.
+- General recursive functions.
 
 Examples are provided in the `examples` directory, while full details of the grammar and syntax are in `parser`.

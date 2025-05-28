@@ -30,6 +30,7 @@ executable compile
     build-tool-depends: alex:alex, happy:happy
     hs-source-dirs:     compile
     default-language:   Haskell2010
+    ghc-options: -W
 
 executable bracketfuck
     main-is:          Main.hs
@@ -40,3 +41,4 @@ executable bracketfuck
                       vector
     hs-source-dirs:   bracketfuck
     default-language: Haskell2010
+    ghc-options: -W

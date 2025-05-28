@@ -14,7 +14,6 @@ tokens :-
   let					               { tok (\s -> Let) }
   if					               { tok (\s -> If) }
   do					               { tok (\s -> Do) }
-  while					             { tok (\s -> While) }
   define			  		         { tok (\s -> Define) }
   read\-byte				         { tok (\s -> Read) }
   print       					     { tok (\s -> Write) }
@@ -40,7 +39,6 @@ data Token =
     Let
     | If
     | Do
-    | While
     | Define
     | Read
     | Write

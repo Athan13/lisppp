@@ -15,7 +15,6 @@ import Parser.Lexer (Op, Comp)
     let         { L.Let }
     if          { L.If }
     do          { L.Do }
-    while       { L.While }
     define      { L.Define }
     read        { L.Read }
     write       { L.Write }
@@ -40,7 +39,7 @@ Exp : num          { Num $1 }
     | var          { Var $1 }
     | lparen op Exp Exp rparen     { Op $2 $3 $4 }
     | lparen comp Exp Exp rparen   { Comp $2 $3 $4 }
-    | lparen while Exp Exp rparen  { While $3 $4 }
+    | lparen if Exp Exp Exp rparen {If $3 $4 $5 }
     | lparen let lparen var Exp rparen Exp rparen { Let $4 $5 $7 }
     | lparen read rparen       { Read }
     | lparen write Exp rparen  { Write $3 }
@@ -60,17 +59,20 @@ data Exp = Num Int
          | Var String
          | Op Op Exp Exp
          | Comp Comp Exp Exp
-         | While Exp Exp
+         | If Exp Exp Exp
          | Let String Exp Exp
          | Read
          | Write Exp
+         -- function name, args
          | Call String [Exp]
+         -- condition, args, initial_args, new_args, return_value
+         | TailCall Exp [String] [Exp] [Exp] Exp
     deriving (Show)
 
 parseError :: L.Token -> L.Alex a
-parseError _ = do
+parseError token = do
   ((L.AlexPn _ line column), _, _, _) <- L.alexGetInput
-  L.alexError ("parse error at line " ++ (show line) ++ ", column " ++ (show column))
+  L.alexError ("parse error at line " ++ (show line) ++ ", column " ++ (show column) ++ " on token " ++ show token)
 
 lexer :: (L.Token -> L.Alex a) -> L.Alex a
 lexer = (L.alexMonadScan >>=)
