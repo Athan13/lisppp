@@ -4,7 +4,7 @@
 -}
 
 module Compiler.Compile where
-    import Parser.Lexer (Op(..), Comp(..))
+    import Parser.Lexer (Op(..))
     import Parser.Parser
     import Compiler.Ast
     
@@ -132,7 +132,7 @@ module Compiler.Compile where
                 ++ add_cells pos (pos + 2) (pos + 4) -- add x to x
                 ++ copy_cell (pos + 1) (pos + 2) (pos + 3) (pos + 4) -- copy x back to tmp
                 ++ [BFLoopR 1, BFLeft 4]
-        Comp Eq e1 e2 -> do 
+        Eq e1 e2 -> do 
             -- x[-y-x]+y[x-y[-]]x for [x = pos][y = pos + 1][pos + 2]...
             e1 <- compile_exp e1
             e2 <- local (shift_pos 1) (compile_exp e2)
@@ -140,13 +140,39 @@ module Compiler.Compile where
                 ++ [BFLoopL 1, BFMinus 1, BFRight 1, BFMinus 1, BFLeft 1, BFLoopR 1, BFPlus 1]
                 ++ [BFRight 1, BFLoopL 1, BFLeft 1, BFMinus 1, BFRight 1]
                 ++ clear_cell ++ [BFLoopR 1, BFLeft 1]
-        Comp Neq e1 e2 -> do
+        Neq e1 e2 -> do
             -- x[y-x-]y[[-]x+y]x for [x = pos][y = pos + 1][pos + 2]...
             e1 <- compile_exp e1
             e2 <- local (shift_pos 1) (compile_exp e2)
             return $ e1 ++ [BFRight 1] ++ e2 ++ [BFLeft 1]
                 ++ [BFLoopL 1, BFRight 1, BFMinus 1, BFLeft 1, BFMinus 1, BFLoopR 1, BFRight 1]
                 ++ [BFLoopL 2, BFMinus 1, BFLoopR 1, BFLeft 1, BFPlus 1, BFRight 1, BFLoopR 1, BFLeft 1]
+        Gt e1 e2 -> do
+            {-
+                [pos - 1][x][y][tmp0][tmp1][z]
+
+                temp0[-]temp1[-]z[-]
+                x[ temp0+
+                    y[- temp0[-] temp1+ y]
+                    temp0[- z+ temp0]
+                    temp1[- y+ temp1]
+                y- x- ]
+            -}
+            (_, pos) <- lift $ ask
+            e1 <- compile_exp e1
+            e2 <- local (shift_pos 1) (compile_exp e2)
+            return $ e1 ++ [BFRight 1] ++ e2 ++ [BFRight 1] ++ clear_n_cells_right 3 ++ [BFLeft 2] -- x
+                ++ [BFLoopL 1, BFRight 2, BFPlus 1]
+                    ++ [BFLeft 1, BFLoopL 1, BFMinus 1, BFRight 1] ++ clear_cell ++ [BFRight 1, BFPlus 1, BFLeft 2, BFLoopR 1]
+                    ++ [BFRight 1, BFLoopL 1, BFMinus 1, BFRight 2, BFPlus 1, BFLeft 2, BFLoopR 1]
+                    ++ [BFRight 1, BFLoopL 1, BFMinus 1, BFLeft 2, BFPlus 1, BFRight 2, BFLoopR 1]
+                ++ [BFLeft 2, BFMinus 1, BFLeft 1, BFMinus 1, BFLoopR 1]
+                ++ copy_cell (pos + 4) pos (pos + 1) pos
+        Not e1 -> do
+            e1 <- compile_exp e1
+            return $ e1 ++ [BFRight 1] ++ clear_cell ++ [BFPlus 1]
+                ++ [BFLeft 1, BFLoopL 1] ++ clear_cell ++ [BFRight 1, BFMinus 1, BFLeft 1, BFLoopR 1]
+                ++ [BFRight 1, BFLoopL 1, BFMinus 1, BFLeft 1, BFPlus 1, BFRight 1, BFLoopR 1, BFLeft 1]
         If cond e1 e2 -> do
             -- [cond = pos][temp0][temp1][execute e1 or e2]
             (_, pos) <- lift $ ask

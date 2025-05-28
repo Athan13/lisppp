@@ -11,28 +11,30 @@ tokens :-
 
   $white+				;
   "--".*				;
-  let					               { tok (\s -> Let) }
-  if					               { tok (\s -> If) }
-  do					               { tok (\s -> Do) }
-  define			  		         { tok (\s -> Define) }
-  read\-byte				         { tok (\s -> Read) }
-  print       					     { tok (\s -> Write) }
+  let					             { tok (\_ -> Let) }
+  if					             { tok (\_ -> If) }
+  do					             { tok (\_ -> Do) }
+  define			  		         { tok (\_ -> Define) }
+  read\-byte				         { tok (\_ -> Read) }
+  print       					     { tok (\_ -> Write) }
+  not       					     { tok (\_ -> Not) }
   $digit+				             { tok (\s -> Num (read s)) }
   [\+\-\*\/\%]                       { tok (\s -> Op (charToOp $ head s)) }
-  [\=\<\>] | (\>\=) | (\<=) | (\!\=) { tok (\s -> Comp (strToComp s)) }
+  \=                                 { tok (\_ -> Eq)}
+  (\!\=)                             { tok (\_ -> Neq)}
+  \<                                 { tok (\_ -> Lt)}
+  (\<\=)                             { tok (\_ -> Lte)}
+  \>                                 { tok (\_ -> Gt)}
+  (\>\=)                             { tok (\_ -> Gte)}
   $alpha [$alpha $digit \_ \']*		 { tok (\s -> Var s) }
-  \(                                 { tok (\s -> LPAREN) }
-  \)                                 { tok (\s -> RPAREN) }
+  \(                                 { tok (\_ -> LPAREN) }
+  \)                                 { tok (\_ -> RPAREN) }
 
 {
 -- Tokens
 data Op = Add | Sub | Mul | Div | Mod
     deriving (Show, Eq)
 charToOp c = case c of {'+' -> Add; '-' -> Sub; '*' -> Mul; '/' -> Div; '%' -> Mod; _ -> undefined}
-
-data Comp = Eq | Neq | Lt | Gt | Lte | Gte
-    deriving (Show, Eq)
-strToComp s = case s of {"=" -> Eq; "!=" -> Neq; "<" -> Lt; ">" -> Gt; "<=" -> Lte; ">=" -> Gte; _ -> undefined}
 
 data Token =
     -- Keywords
@@ -44,7 +46,13 @@ data Token =
     | Write
     -- Symbols
     | Op Op
-    | Comp Comp
+    | Eq
+    | Neq
+    | Lt
+    | Lte
+    | Gt
+    | Gte
+    | Not
     | Var String
     | Num Int
     | LPAREN

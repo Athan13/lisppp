@@ -2,7 +2,7 @@
 module Parser.Parser where
 
 import qualified Parser.Lexer as L
-import Parser.Lexer (Op, Comp)
+import Parser.Lexer (Op)
 }
 
 %name blisp
@@ -19,7 +19,13 @@ import Parser.Lexer (Op, Comp)
     read        { L.Read }
     write       { L.Write }
     op          { L.Op $$ }
-    comp        { L.Comp $$ }
+    eq          { L.Eq }
+    neq         { L.Neq }
+    lt          { L.Lt }
+    lte         { L.Lte }
+    gt          { L.Gt }
+    gte         { L.Gte }
+    not         { L.Not }
     var         { L.Var $$ }
     num         { L.Num $$ }
     lparen      { L.LPAREN }
@@ -37,9 +43,15 @@ Args : rparen   { [] }
 
 Exp : num          { Num $1 }
     | var          { Var $1 }
-    | lparen op Exp Exp rparen     { Op $2 $3 $4 }
-    | lparen comp Exp Exp rparen   { Comp $2 $3 $4 }
-    | lparen if Exp Exp Exp rparen {If $3 $4 $5 }
+    | lparen op Exp Exp rparen      { Op $2 $3 $4 }
+    | lparen eq Exp Exp rparen      { Eq $3 $4 }
+    | lparen neq Exp Exp rparen     { Neq $3 $4 }
+    | lparen lt Exp Exp rparen      { Gt $4 $3 }
+    | lparen lte Exp Exp rparen     { Not (Gt $3 $4) }
+    | lparen gt Exp Exp rparen      { Gt $3 $4 }
+    | lparen gte Exp Exp rparen     { Not (Gt $4 $3) }
+    | lparen not Exp rparen         { Not $3 }
+    | lparen if Exp Exp Exp rparen  { If $3 $4 $5 }
     | lparen let lparen var Exp rparen Exp rparen { Let $4 $5 $7 }
     | lparen read rparen       { Read }
     | lparen write Exp rparen  { Write $3 }
@@ -58,7 +70,11 @@ data Defn = Defn String [String] Exp
 data Exp = Num Int
          | Var String
          | Op Op Exp Exp
-         | Comp Comp Exp Exp
+         -- Boolean operations
+         | Eq Exp Exp
+         | Neq Exp Exp
+         | Gt Exp Exp
+         | Not Exp
          | If Exp Exp Exp
          | Let String Exp Exp
          | Read

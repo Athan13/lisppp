@@ -12,7 +12,10 @@ module Compiler.Ast where
         Num _ -> True
         Var _ -> True
         Op _ e1 e2    -> is_simple e1 && is_simple e2
-        Comp _ e1 e2  -> is_simple e1 && is_simple e2
+        Eq e1 e2      -> is_simple e1 && is_simple e2
+        Neq e1 e2     -> is_simple e1 && is_simple e2
+        Gt e1 e2      -> is_simple e1 && is_simple e2
+        Not e1        -> is_simple e1
         If cond e1 e2 -> is_simple cond && is_simple e1 && is_simple e2
         Let _ e1 e2   -> is_simple e1 && is_simple e2
         Read          -> True
@@ -22,11 +25,11 @@ module Compiler.Ast where
 
     get_tail_call :: Defn -> Maybe ([Exp] -> Exp)
     get_tail_call (Defn d_name arg_names (If cond (Call c_name new_args) else_case)) = 
-        if d_name == c_name && is_simple else_case then
+        if d_name == c_name && is_simple else_case && all is_simple new_args then
             Just $ \initial_args -> TailCall cond arg_names initial_args new_args else_case
         else Nothing
     get_tail_call (Defn d_name arg_names (If cond then_case (Call c_name new_args))) =
-        if d_name == c_name && is_simple then_case then
+        if d_name == c_name && is_simple then_case && all is_simple new_args then
             Just $ \initial_args -> TailCall cond arg_names initial_args new_args then_case
         else Nothing
     get_tail_call _ = Nothing
@@ -42,10 +45,21 @@ module Compiler.Ast where
             e1 <- replace_vars symtab e1
             e2 <- replace_vars symtab e2
             return $ Op op e1 e2
-        Comp c e1 e2 -> do
+        Eq e1 e2 -> do
             e1 <- replace_vars symtab e1
             e2 <- replace_vars symtab e2
-            return $ Comp c e1 e2
+            return $ Eq e1 e2
+        Neq e1 e2 -> do
+            e1 <- replace_vars symtab e1
+            e2 <- replace_vars symtab e2
+            return $ Neq e1 e2
+        Gt e1 e2 -> do
+            e1 <- replace_vars symtab e1
+            e2 <- replace_vars symtab e2
+            return $ Gt e1 e2
+        Not e1 -> do
+            e1 <- replace_vars symtab e1
+            return $ Not e1
         If cond e1 e2 -> do
             cond <- replace_vars symtab cond
             e1 <- replace_vars symtab e1
@@ -73,10 +87,21 @@ module Compiler.Ast where
             e1 <- inline_defn d is_tail_call e1
             e2 <- inline_defn d is_tail_call e2
             return $ Op op e1 e2
-        Comp c e1 e2 -> do
+        Eq e1 e2 -> do
             e1 <- inline_defn d is_tail_call e1
             e2 <- inline_defn d is_tail_call e2
-            return $ Comp c e1 e2
+            return $ Eq e1 e2
+        Neq e1 e2 -> do
+            e1 <- inline_defn d is_tail_call e1
+            e2 <- inline_defn d is_tail_call e2
+            return $ Neq e1 e2
+        Gt e1 e2 -> do
+            e1 <- inline_defn d is_tail_call e1
+            e2 <- inline_defn d is_tail_call e2
+            return $ Gt e1 e2
+        Not e1 -> do
+            e1 <- inline_defn d is_tail_call e1
+            return $ Not e1
         Let s e1 e2 -> do
             e1 <- inline_defn d is_tail_call e1
             e2 <- inline_defn d is_tail_call e2
