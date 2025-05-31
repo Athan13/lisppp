@@ -117,21 +117,26 @@ module Compiler.Compile where
             e2 <- local (shift_pos 1) (compile_exp e2)
             return $ e1 ++ [BFRight 1] ++ e2 ++ [BFLeft 1] ++ sub_cells pos (pos + 1) pos
         Op Mul e1 e2 -> do  
-            -- calculate x * y --> [pos - 1], [x], [x], [x], [tmp], [y]
-            -- Idea is to add (pos + 2) to (pos) (y) times, replenishing (pos + 2) with 
-            -- (pos + 1) when it equals zero
-            (_, pos) <- lift $ ask
+            {-
+                temp0[-]
+                temp1[-]
+                x[temp1+x-]
+                temp1[
+                    y[x+temp0+y-]
+                    temp0[y+temp0-]
+                temp1-]
+
+            [pos-1][x][y][temp0][temp1]
+            -}
             e1 <- compile_exp e1
-            e2 <- local (shift_pos 4) (compile_exp e2)
-            return $ 
-                e1 
-                ++ copy_cell pos (pos + 1) (pos + 3) pos
-                ++ copy_cell pos (pos + 2) (pos + 3) pos
-                ++ [BFRight 4] ++ e2  -- head is at pos + 4
-                ++ [BFLoopL 1, BFMinus 1] -- outside loop: addition `y` times
-                ++ add_cells pos (pos + 2) (pos + 4) -- add x to x
-                ++ copy_cell (pos + 1) (pos + 2) (pos + 3) (pos + 4) -- copy x back to tmp
-                ++ [BFLoopR 1, BFLeft 4]
+            e2 <- local (shift_pos 1) (compile_exp e2)
+            return $ e1 ++ [BFRight 1] ++ e2 ++ [BFRight 1] ++ clear_n_cells_right 2
+                ++ [BFLeft 2, BFLoopL 1, BFRight 3, BFPlus 1, BFLeft 3, BFMinus 1, BFLoopR 1]  -- x
+                ++ [BFRight 3, BFLoopL 1]  -- temp1
+                    ++ [BFLeft 2, BFLoopL 1, BFLeft 1, BFPlus 1, BFRight 2, BFPlus 1, BFLeft 1, BFMinus 1, BFLoopR 1]
+                    ++ [BFRight 1, BFLoopL 1, BFLeft 1, BFPlus 1, BFRight 1, BFMinus 1, BFLoopR 1]
+                ++ [BFRight 1, BFMinus 1, BFLoopR 1]
+                ++ [BFLeft 3]
         Op Div e1 e2 -> do
             {-
                 # >n d
@@ -144,7 +149,7 @@ module Compiler.Compile where
             (_, pos) <- lift $ ask
             e1 <- compile_exp e1
             e2 <- local (shift_pos 1) (compile_exp e2)
-            return $ e1 ++ [BFRight 1] ++ e2 ++ [BFLeft 1]
+            return $ e1 ++ [BFRight 1] ++ e2 ++ [BFLeft 1] ++ clear_n_cells_right 3
                 ++ [BFLoopL 1, BFMinus 1, BFRight 1, BFMinus 1, BFLoopL 1, BFRight 1, BFPlus 1, BFRight 2, BFLoopR 1]
                 ++ [BFRight 1, BFLoopL 1, BFPlus 1, BFLoopL 1, BFMinus 1, BFLeft 1, BFPlus 1, BFRight 1, BFLoopR 1]
                 ++ [BFRight 1, BFPlus 1, BFRight 2, BFLoopR 1, BFLeft 5, BFLoopR 1]
@@ -230,17 +235,22 @@ module Compiler.Compile where
         TailCall condition arg_names initial_args new_args return_value -> do
             (_, pos) <- lift $ ask
             let num_args = length arg_names
-            let arg_posns = [pos..(pos+num_args-1)]
-            initial_args <- mapM (\(offset, e) -> local (shift_pos offset) (compile_exp e)) (zip [0..] initial_args)
+            let arg_posns = [pos..]
+            initial_args <- mapM 
+                (\(offset, e) -> local (shift_pos offset) (compile_exp e)) 
+                (zip [0..] initial_args)
             condition <- local (add_many_to_symtab arg_names arg_posns . shift_pos num_args) (compile_exp condition)
-            new_args <- mapM (local (add_many_to_symtab arg_names arg_posns . shift_pos num_args) . compile_exp) new_args
+            new_args <- mapM 
+                (\(offset, e) -> local (add_many_to_symtab arg_names arg_posns . shift_pos (num_args + offset)) (compile_exp e)) 
+                (zip [0..] new_args)
             return_value <- local (add_many_to_symtab arg_names arg_posns . shift_pos num_args) (compile_exp return_value)
             return $ concat ((++ [BFRight 1]) <$> initial_args) ++ condition
                 ++ [BFLoopL 1] 
-                    ++ concat (
-                        (\(i, new_arg) -> 
-                            new_arg ++ copy_cell (pos + num_args) (pos + i) (pos + num_args + 1) (pos + num_args)) 
-                        <$> zip [0..] new_args) 
+                    ++ concat ((++ [BFRight 1]) <$> new_args)
+                    ++ concatMap  -- copy all the cells to the right position
+                        (\i -> copy_cell (pos + num_args + i) (pos + i) (pos + 2 * num_args + 1) (pos + 2 * num_args))
+                        [(num_args - 1),(num_args - 2)..0]
+                    ++ [BFLeft num_args]
                     ++ condition 
                 ++ [BFLoopR 1] ++ return_value
                 ++ copy_cell (pos + num_args) pos (pos + 1) (pos + num_args) 
