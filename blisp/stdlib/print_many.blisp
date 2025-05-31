@@ -1,0 +1,39 @@
+(define printtwo (x y)
+    (do (print x) (print y))
+)
+
+(define printthree (x y z)
+    (do (print x) (print y) (print z))
+)
+
+(define repeat (x n)
+    (if (= n 1)
+        (print x)
+        (repeat (print x) (- n 1))
+    )
+)
+
+-- echo once
+(define echo ()
+    (print (read-byte))
+)
+
+-- echo n times
+(define necho (n)
+    (if (= n 0)
+        0
+        (necho 
+            (do (print (read-byte)) (- n 1))
+        )
+    )
+)
+
+-- echo infinitely
+(define parrothelper (x)
+    (if (= 0 1)
+        0
+        (parrothelper (print (read-byte)))
+    )
+)
+
+(define parrot () (parrothelper 0))
