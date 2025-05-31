@@ -32,4 +32,5 @@ module Main where
                 case compile (concat contents ++ s) of
                     Left err -> print $ "Error: " ++ err
                     Right success -> writeFile out_file $ Compile.showInstructions success
-            _ -> putStrLn "Usage:\n\tcabal run compile -- [in-file.lisp | -i] -o <out-file.b>"
+            _ -> putStrLn "Usage:\n\tcabal run compile -- [in-file.lisp | -i] -o <out-file.b>\
+\\n\n\t-i \t read input from stdin."
