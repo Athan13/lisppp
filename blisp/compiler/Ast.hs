@@ -129,7 +129,12 @@ module Compiler.Ast where
             else case is_tail_call of 
                 Just tail_call -> return $ tail_call es
                 Nothing -> replace_vars (M.fromList $ zip args es) body
-        TailCall _ _ _ _ _ -> throwError $ "invalid tailcall"
+        TailCall cond arg_names initial_args new_args else_case -> do
+            cond <- inline_defn d is_tail_call cond
+            initial_args <- mapM (inline_defn d is_tail_call) initial_args
+            new_args <- mapM (inline_defn d is_tail_call) new_args
+            else_case <- inline_defn d is_tail_call else_case
+            return $ TailCall cond arg_names initial_args new_args else_case
 
     inline_defns :: Program -> AstError Exp
     inline_defns (Program [] body) = return body

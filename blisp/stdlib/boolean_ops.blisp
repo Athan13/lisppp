@@ -1,0 +1,21 @@
+(define and (x y)
+    (if x
+        (if y 1 0)
+        0
+    )
+)
+
+(define nand (x y) (not (and x y)))
+
+(define or (x y)
+    (if x
+        1
+        (if y 1 0)
+    )
+)
+
+(define nor (x y) (not (or x y)))
+
+(define xor (x y)
+    (and (or x y) (nand x y))
+)

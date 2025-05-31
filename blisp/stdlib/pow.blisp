@@ -1,0 +1,10 @@
+-- pow: (pow x y) = x ** y.
+
+(define powhelper (x y accum)
+    (if (= y 0)
+        accum
+        (powhelper x (- y 1) (* x accum))
+    )
+)
+
+(define pow (x y) (powhelper x y 1))
